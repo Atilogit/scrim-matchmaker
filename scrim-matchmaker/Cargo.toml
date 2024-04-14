@@ -7,8 +7,22 @@ publish = false
 [dependencies]
 anyhow = "1.0.68"
 poise = "0.6.1"
-shuttle-runtime = "0.43.0"
+shuttle-runtime = { version = "0.43.0", default-features = false }
 # Since poise is a serenity command framework, it can run on Shuttle with shuttle-serenity
 shuttle-serenity = "0.43.0"
+shuttle-shared-db = { version = "0.43", features = ["postgres", "sqlx"] }
+sqlx = { version = "0.7", features = [
+    "runtime-tokio",
+    "tls-rustls",
+    "postgres",
+    "macros",
+    "chrono",
+] }
 tracing = "0.1.37"
 tokio = "1.26.0"
+chrono = "0.4"
+chrono-tz = "0.9"
+fuzzy-matcher = "0.3"
+date_time_parser = "0.2"
+enum-utils = "0.1"
+tracing-subscriber = "0.3"
