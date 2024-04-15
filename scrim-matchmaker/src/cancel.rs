@@ -13,7 +13,10 @@ use crate::{db, Context, Error};
 
 #[poise::command(
     slash_command,
-    description_localized("en-US", "Cancel scrims. This removes them from the matchmaker."),
+    description_localized(
+        "en-US",
+        "Cancel multiple scrims. This removes them from the matchmaker."
+    ),
     ephemeral
 )]
 #[tracing::instrument(err, skip(ctx), fields(user = ctx.author().id.get()))]
@@ -67,7 +70,7 @@ pub async fn cancel(ctx: Context<'_>) -> Result<(), Error> {
         .message()
         .await?
         .await_component_interaction(ctx)
-        .timeout(Duration::from_secs(60 * 60))
+        .timeout(Duration::from_secs(30 * 60))
         .stream();
 
     let mut to_cancel = Vec::new();

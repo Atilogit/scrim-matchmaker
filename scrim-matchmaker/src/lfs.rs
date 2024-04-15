@@ -11,13 +11,13 @@ use poise::{
 
 use crate::{db, Context, Error};
 
-#[derive(ChoiceParameter, Debug, enum_utils::FromStr)]
+#[derive(ChoiceParameter, Debug, Clone, enum_utils::FromStr)]
 pub enum Region {
     EU,
     NA,
 }
 
-#[derive(ChoiceParameter, Debug, enum_utils::FromStr)]
+#[derive(ChoiceParameter, Debug, Clone, enum_utils::FromStr)]
 pub enum Platform {
     PC,
     Console,
@@ -47,10 +47,10 @@ fn parse_rank_range(s: &str) -> Result<Range<u32>, String> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RankRange(pub Range<u32>);
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct LookingForScrim {
     pub id: i32,
     pub creator_id: i64,
@@ -95,6 +95,14 @@ pub async fn lfs(
     #[description = "Optional team name to show in the confirmation message and to other users"]
     team_name: Option<String>,
 ) -> Result<(), Error> {
+    if let Some(team_name) = &team_name {
+        if team_name.len() > 50 {
+            return Err("Team name is too long".into());
+        } else if team_name.len() < 3 {
+            return Err("Team name is too short".into());
+        }
+    }
+
     let zone = db::get_timezone(ctx).await?;
     let now = Utc::now().with_timezone(&zone);
 
@@ -142,8 +150,7 @@ pub async fn lfs(
 
     if let Some(i) = confirm_msg
         .await_component_interaction(ctx)
-        // One hour timeout before the message disappears
-        .timeout(Duration::from_secs(60 * 60))
+        .timeout(Duration::from_secs(30 * 60))
         .await
     {
         let confirmed = i.data.custom_id == "confirm";

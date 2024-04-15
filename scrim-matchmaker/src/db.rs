@@ -65,6 +65,24 @@ pub async fn cancel_scrim(ctx: Context<'_>, id: i32) -> Result<(), sqlx::Error> 
 }
 
 #[tracing::instrument(err, skip(ctx))]
+pub async fn restore_scrim(ctx: Context<'_>, id: i32) -> Result<(), sqlx::Error> {
+    sqlx::query("UPDATE scrims SET cancelled = FALSE WHERE id = $1")
+        .bind(id)
+        .execute(&ctx.data().db)
+        .await?;
+    Ok(())
+}
+
+#[tracing::instrument(err, skip(ctx))]
+pub async fn revoke_scrim(ctx: Context<'_>, id: i32) -> Result<(), sqlx::Error> {
+    sqlx::query("UPDATE scrims SET match_id = NULL WHERE id = $1")
+        .bind(id)
+        .execute(&ctx.data().db)
+        .await?;
+    Ok(())
+}
+
+#[tracing::instrument(err, skip(ctx))]
 pub async fn get_future_scrims(ctx: Context<'_>) -> Result<Vec<LookingForScrim>, sqlx::Error> {
     sqlx::query("SELECT * FROM scrims WHERE creator_id = $1 AND time >= NOW() AND NOT cancelled")
         .bind(ctx.author().id.get() as i64)
@@ -80,6 +98,17 @@ pub async fn get_scrim(ctx: Context<'_>, id: i32) -> Result<LookingForScrim, sql
         .fetch_one(&ctx.data().db)
         .await?;
     Ok(row_to_lfs(row))
+}
+
+/// Match two scrims together. Only the first one with is updated, the second one is left as is.
+/// If the second scrim is available, it will be returned.
+pub async fn match_scrims(ctx: Context<'_>, id: i32, to: i32) -> Result<(), sqlx::Error> {
+    sqlx::query("UPDATE scrims SET match_id = $2 WHERE id = $1")
+        .bind(id)
+        .bind(to)
+        .execute(&ctx.data().db)
+        .await?;
+    Ok(())
 }
 
 fn row_to_lfs(row: PgRow) -> LookingForScrim {
@@ -113,10 +142,12 @@ pub async fn find_matches(
             ABS((rank_from + rank_to) / 2 - $1) * $2 +
             ABS(EXTRACT(epoch FROM time - $3)) * $4 +
             (region != $5)::INT * $6 +
-            (platform != $7)::INT * $8
+            (platform != $7)::INT * $8 +
+
+            (NOT match_id IS NULL AND match_id = 7)::INT * -10000000
         )::FLOAT4 AS difference
         FROM scrims
-        WHERE creator_id != $9 AND time >= NOW() AND NOT cancelled AND match_id IS NULL
+        WHERE creator_id != $10 AND time >= NOW() AND NOT cancelled AND (match_id IS NULL OR match_id = $9)
         ORDER BY difference ASC LIMIT 5
         ",
     )
@@ -128,6 +159,7 @@ pub async fn find_matches(
     .bind(region_weight)
     .bind(format!("{:?}", lfs.platform))
     .bind(platform_weight)
+    .bind(lfs.id)
     .bind(lfs.creator_id)
     .fetch(&ctx.data().db)
     .map(|row| row.map(|row| (row.get("difference"), row_to_lfs(row))))
