@@ -47,7 +47,6 @@ async fn main(
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
             commands: vec![
-                register(),
                 lfs::lfs(),
                 timezone::timezone(),
                 scrims::scrims(),
@@ -76,8 +75,10 @@ async fn main(
             },
             ..Default::default()
         })
-        .setup(|_ctx, _ready, _framework| {
+        .setup(|ctx, _ready, framework| {
             Box::pin(async move {
+                tracing::info!("Registering commands");
+                poise::builtins::register_globally(ctx, &framework.options().commands).await?;
                 tracing::info!("Running migrations");
                 sqlx::migrate!().run(&pool).await?;
                 tracing::info!("Migrations done");
@@ -92,15 +93,4 @@ async fn main(
         .map_err(shuttle_runtime::CustomError::new)?;
 
     Ok(client.into())
-}
-
-#[poise::command(
-    slash_command,
-    ephemeral,
-    hide_in_help,
-    description_localized("en-US", "Register the application commands.")
-)]
-pub async fn register(ctx: Context<'_>) -> Result<(), Error> {
-    poise::samples::register_application_commands_buttons(ctx.into()).await?;
-    Ok(())
 }
