@@ -166,7 +166,8 @@ pub async fn scrims(ctx: Context<'_>) -> Result<(), Error> {
     let mut scrims = db::get_future_scrims(ctx).await?;
     scrims.sort_by_key(|scrim| scrim.time);
     if scrims.is_empty() {
-        ctx.reply("You have no upcoming scrims").await?;
+        ctx.reply("You have no upcoming scrims. Use `/lfs` to look for one")
+            .await?;
         return Ok(());
     }
 
