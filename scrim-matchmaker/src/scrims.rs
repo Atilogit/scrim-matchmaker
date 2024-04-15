@@ -87,12 +87,14 @@ impl ScrimMsg {
                     content.push_str("No matches found. Try again later\n");
                 } else {
                     content.push_str("### Potential matches:\n");
-                    for (match_id, (_diff, other)) in matches.iter().enumerate() {
+                    for (match_id, (diff, other)) in matches.iter().enumerate() {
                         write!(content, "{}. ", match_id + 1).unwrap();
                         write_scrim_with_name(other, Some(&self.scrim), true, &mut content);
                         if other.match_id.is_some() {
                             content.push_str(" (picked you)");
                         }
+                        #[cfg(debug_assertions)]
+                        write!(content, " (diff: {diff})").unwrap();
                         content.push('\n');
 
                         buttons.push(

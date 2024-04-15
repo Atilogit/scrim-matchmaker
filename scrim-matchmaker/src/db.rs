@@ -133,9 +133,9 @@ pub async fn find_matches(
     lfs: &LookingForScrim,
 ) -> Result<Vec<(f32, LookingForScrim)>, sqlx::Error> {
     let rank_weight = 1;
-    let time_weight = 1;
-    let region_weight = 1;
-    let platform_weight = 1;
+    let time_weight = 1. / 3600. * 500.;
+    let region_weight = 500;
+    let platform_weight = 200;
     sqlx::query(
         "SELECT *,
         (
